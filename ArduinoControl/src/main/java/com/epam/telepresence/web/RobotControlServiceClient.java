@@ -15,25 +15,26 @@ import java.util.Map;
 
 public class RobotControlServiceClient {
 
-	private static final byte FWD_SHIFT = 0;
-	private static final byte BKWD_SHIFT = 1;
-	private static final byte LEFT_SHIFT = 2;
-	private static final byte RIGHT_SHIFT = 3;
-	private static final byte STOP_SHIFT = 4;
+	private static final byte FWD_PIN = 4;
+	private static final byte BKWD_PIN = 5;
+	private static final byte LEFT_PIN = 6;
+	private static final byte RIGHT_PIN = 7;
 
 	private static final Command DO_NOTHING = new Command() {
 		@Override
-		public void run(UsbService usbService, RobotControlServiceClient client) {}
+		public void run(UsbService usbService, RobotControlServiceClient client) {
+			client.sleep(100);
+		}
 	};
 
 	private static final Map<String, Command> COMMANDS = new HashMap<String, Command>() {
 		{
 			put("<EMPTY>", 	DO_NOTHING);
-			put("Forward", 	new SendByteCommand((byte) (1 << FWD_SHIFT)));
-			put("Backward", new SendByteCommand((byte) (1 << BKWD_SHIFT)));
-			put("Left", 	new SendByteCommand((byte) (1 << LEFT_SHIFT)));
-			put("Right", 	new SendByteCommand((byte) (1 << RIGHT_SHIFT)));
-			put("Stop/Rst", new SendByteCommand((byte) (1 << STOP_SHIFT)));
+			put("Forward", 	new SendByteCommand((byte) (1 << FWD_PIN)));
+			put("Backward", new SendByteCommand((byte) (1 << BKWD_PIN)));
+			put("Left", 	new SendByteCommand((byte) (1 << LEFT_PIN)));
+			put("Right", 	new SendByteCommand((byte) (1 << RIGHT_PIN)));
+			put("Stop/Rst", new SendByteCommand((byte) 0));
 		}
 
 		@Override
@@ -63,14 +64,20 @@ public class RobotControlServiceClient {
 					} catch (IOException e) {
 						Log.e("RobotControlServiceClient", e.getMessage(), e);
 					}
-					try {
-						Thread.sleep((System.currentTimeMillis() - lastNonEmptyCommand) < 15000 ? 100 : 3000);
-					} catch (InterruptedException e) {
-						Thread.currentThread().interrupt();
-					}
+					sleep(3000);
 				}
 			}
 		}).start();
+	}
+
+	private void sleep(long time) {
+		try {
+			if ((System.currentTimeMillis() - lastNonEmptyCommand) >= 15000) {
+				Thread.sleep(time);
+			}
+		} catch (InterruptedException e) {
+			Thread.currentThread().interrupt();
+		}
 	}
 
 	private void handleCommand(UsbService usbService, String command) {
