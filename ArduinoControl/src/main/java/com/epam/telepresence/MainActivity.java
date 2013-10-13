@@ -22,7 +22,7 @@ public class MainActivity extends Activity {
 				return device.getVendorId() == 0x2341 && device.getProductId() == 0x0043;
 			}
 		});
-		RobotControlServiceClient.startClient(usbService);
+		new RobotControlServiceClient().startClient(usbService);
 	}
 
 }

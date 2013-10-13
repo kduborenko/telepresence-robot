@@ -12,8 +12,6 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Timer;
-import java.util.TimerTask;
 
 public class RobotControlServiceClient {
 
@@ -25,7 +23,7 @@ public class RobotControlServiceClient {
 
 	private static final Command DO_NOTHING = new Command() {
 		@Override
-		public void run(UsbService usbService) {}
+		public void run(UsbService usbService, RobotControlServiceClient client) {}
 	};
 
 	private static final Map<String, Command> COMMANDS = new HashMap<String, Command>() {
@@ -45,33 +43,42 @@ public class RobotControlServiceClient {
 		}
 	};
 
-	public static void startClient(final UsbService usbService) {
-		new Timer().schedule(new TimerTask() {
+	private long lastNonEmptyCommand = 0;
+
+	public void startClient(final UsbService usbService) {
+		new Thread(new Runnable() {
 			@Override
 			public void run() {
-				try {
-					URL url = new URL("http://207.244.68.115:8080/apps/RobotApp/Commander");
-					InputStream in = url.openConnection().getInputStream();
-					BufferedReader br = new BufferedReader(new InputStreamReader(in));
-					String command = br.readLine();
-					Log.i("URL", command);
-					in.close();
-					handleCommand(usbService, command);
-				} catch (MalformedURLException e) {
-					e.printStackTrace();
-				} catch (IOException e) {
-					e.printStackTrace();
+				while (!Thread.currentThread().isInterrupted()) {
+					try {
+						URL url = new URL("http://207.244.68.115:8080/apps/RobotApp/Commander");
+						InputStream in = url.openConnection().getInputStream();
+						BufferedReader br = new BufferedReader(new InputStreamReader(in));
+						String command = br.readLine();
+						Log.i("URL", command);
+						in.close();
+						handleCommand(usbService, command);
+					} catch (MalformedURLException e) {
+						Log.e("RobotControlServiceClient", e.getMessage(), e);
+					} catch (IOException e) {
+						Log.e("RobotControlServiceClient", e.getMessage(), e);
+					}
+					try {
+						Thread.sleep((System.currentTimeMillis() - lastNonEmptyCommand) < 15000 ? 100 : 3000);
+					} catch (InterruptedException e) {
+						Thread.currentThread().interrupt();
+					}
 				}
 			}
-		}, 0, 50);
+		}).start();
 	}
 
-	private static void handleCommand(UsbService usbService, String command) {
-		COMMANDS.get(command).run(usbService);
+	private void handleCommand(UsbService usbService, String command) {
+		COMMANDS.get(command).run(usbService, this);
 	}
 
 	private interface Command {
-		void run(UsbService usbService);
+		void run(UsbService usbService, RobotControlServiceClient client);
 	}
 
 	private static class SendByteCommand implements Command {
@@ -83,8 +90,9 @@ public class RobotControlServiceClient {
 		}
 
 		@Override
-		public void run(UsbService usbService) {
+		public void run(UsbService usbService, RobotControlServiceClient client) {
 			usbService.sendByte(b);
+			client.lastNonEmptyCommand = System.currentTimeMillis();
 		}
 	}
 }
