@@ -4,10 +4,8 @@ import android.util.Log;
 
 import com.epam.telepresence.usb.UsbService;
 
-import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.HashMap;
@@ -20,27 +18,26 @@ public class RobotControlServiceClient {
 	private static final byte LEFT_PIN = 6;
 	private static final byte RIGHT_PIN = 7;
 
-	private static final Command DO_NOTHING = new Command() {
+	private static final UsbCommand DO_NOTHING = new UsbCommand() {
 		@Override
 		public void run(UsbService usbService, RobotControlServiceClient client) {
 			client.sleep(100);
 		}
 	};
 
-	private static final Map<String, Command> COMMANDS = new HashMap<String, Command>() {
+	private static final Map<Command, UsbCommand> COMMANDS = new HashMap<Command, UsbCommand>() {
 		{
-			put("<EMPTY>", 	DO_NOTHING);
-			put("Forward", 	new SendByteCommand((byte) (1 << FWD_PIN)));
-			put("Backward", new SendByteCommand((byte) (1 << BKWD_PIN)));
-			put("Left", 	new SendByteCommand((byte) (1 << LEFT_PIN)));
-			put("Right", 	new SendByteCommand((byte) (1 << RIGHT_PIN)));
-			put("Stop/Rst", new SendByteCommand((byte) 0));
+			put(Command.EMPTY, 	DO_NOTHING);
+			put(Command.FORWARD, 	new SendByteUsbCommand((byte) (1 << FWD_PIN)));
+			put(Command.BACKWARD, new SendByteUsbCommand((byte) (1 << BKWD_PIN)));
+			put(Command.LEFT, 	new SendByteUsbCommand((byte) (1 << LEFT_PIN)));
+			put(Command.RIGHT, 	new SendByteUsbCommand((byte) (1 << RIGHT_PIN)));
 		}
 
 		@Override
-		public Command get(Object key) {
-			Command command = super.get(key);
-			return command == null ? DO_NOTHING : command;
+		public UsbCommand get(Object key) {
+			UsbCommand usbCommand = super.get(key);
+			return usbCommand == null ? DO_NOTHING : usbCommand;
 		}
 	};
 
@@ -54,17 +51,20 @@ public class RobotControlServiceClient {
 					try {
 						URL url = new URL("http://207.244.68.115:8080/apps/RobotApp/Commander");
 						InputStream in = url.openConnection().getInputStream();
-						BufferedReader br = new BufferedReader(new InputStreamReader(in));
-						String command = br.readLine();
-						Log.i("URL", command);
+						byte[] buffer = new byte[1];
+						for (int length; (length = in.read(buffer)) != -1;) {
+							for (int i = 0; i < length; i++) {
+								Command command = Command.BY_CODE.get(buffer[i]);
+								Log.i("URL", command.toString());
+								COMMANDS.get(command).run(usbService, RobotControlServiceClient.this);
+							}
+						}
 						in.close();
-						handleCommand(usbService, command);
 					} catch (MalformedURLException e) {
 						Log.e("RobotControlServiceClient", e.getMessage(), e);
 					} catch (IOException e) {
 						Log.e("RobotControlServiceClient", e.getMessage(), e);
 					}
-					sleep(3000);
 				}
 			}
 		}).start();
@@ -80,19 +80,15 @@ public class RobotControlServiceClient {
 		}
 	}
 
-	private void handleCommand(UsbService usbService, String command) {
-		COMMANDS.get(command).run(usbService, this);
-	}
-
-	private interface Command {
+	private interface UsbCommand {
 		void run(UsbService usbService, RobotControlServiceClient client);
 	}
 
-	private static class SendByteCommand implements Command {
+	private static class SendByteUsbCommand implements UsbCommand {
 
 		private byte b;
 
-		private SendByteCommand(byte b) {
+		private SendByteUsbCommand(byte b) {
 			this.b = b;
 		}
 
