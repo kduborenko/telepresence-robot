@@ -7,13 +7,17 @@ void setup() {
 
 void loop() {
   if (millis() - lastCommandTimestamp > 200) {
-    PORTD = B0;  
+    analogWrite(5, 0);
+    analogWrite(6, 0);
+    analogWrite(10, 0);
+    analogWrite(11, 0); 
   }
 }
 
 void serialEvent() {
   while (Serial.available()) {
-    PORTD = PORTD | (byte) Serial.read();
+    byte command = (byte) Serial.read();
+    analogWrite(command, 160);
     lastCommandTimestamp = millis();    
   }
 }
