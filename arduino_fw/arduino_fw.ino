@@ -17,7 +17,7 @@ void loop() {
 void serialEvent() {
   while (Serial.available()) {
     byte command = (byte) Serial.read();
-    analogWrite(command, 160);
+    analogWrite(command, command < 10 ? 160 : 200);
     lastCommandTimestamp = millis();    
   }
 }
