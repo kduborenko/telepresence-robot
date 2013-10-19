@@ -16,19 +16,24 @@ import android.widget.EditText;
 import android.widget.Spinner;
 
 import com.epam.telepresence.usb.DeviceInitializationListener;
+import com.epam.telepresence.usb.UsbDeviceDescriptor;
+import com.epam.telepresence.usb.UsbDevicesDatabase;
 import com.epam.telepresence.usb.UsbService;
 import com.epam.telepresence.web.RobotControlServiceClient;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 
 public class MainActivity extends Activity {
 	private RobotControlServiceClient client;
+	private UsbDevicesDatabase usbDevicesDatabase;
 
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.main);
+		usbDevicesDatabase = new UsbDevicesDatabase(getApplicationContext());
 		Spinner deviceListSpinner = (Spinner) findViewById(R.id.deviceList);
 		deviceListSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
 			@Override
@@ -64,22 +69,27 @@ public class MainActivity extends Activity {
 	}
 
 	private void reinitializeDeviceListValues(Spinner deviceListSpinner, Context context) {
-		deviceListSpinner.setAdapter(new ArrayAdapter<UsbDevice>(context,
+		deviceListSpinner.setAdapter(new ArrayAdapter<UsbDeviceDescriptor>(context,
 			android.R.layout.simple_spinner_dropdown_item, getUsbDevices(context)));
 		reinitializeStartButton(deviceListSpinner);
 	}
 
-	private List<UsbDevice> getUsbDevices(Context context) {
+	private List<UsbDeviceDescriptor> getUsbDevices(Context context) {
 		//noinspection ConstantConditions
-		return new ArrayList<UsbDevice>(((UsbManager) context
-			.getSystemService(Context.USB_SERVICE)).getDeviceList().values());
+		Collection<UsbDevice> usbDevices = ((UsbManager) context
+			.getSystemService(Context.USB_SERVICE)).getDeviceList().values();
+		ArrayList<UsbDeviceDescriptor> usbDeviceDescriptors = new ArrayList<UsbDeviceDescriptor>(usbDevices.size());
+		for (UsbDevice usbDevice : usbDevices) {
+			usbDeviceDescriptors.add(usbDevicesDatabase.getUsbDeviceDescriptor(usbDevice));
+		}
+		return usbDeviceDescriptors;
 	}
 
 	public void onStartButtonPressed(final View view) {
 		Spinner deviceListSpinner = (Spinner) findViewById(R.id.deviceList);
 		new UsbService(
 			getApplicationContext(),
-			(UsbDevice) deviceListSpinner.getSelectedItem(),
+			((UsbDeviceDescriptor) deviceListSpinner.getSelectedItem()).getUsbDevice(),
 			new DeviceInitializationListener() {
 				@Override
 				public void onDeviceInitializedSuccessfully(UsbService usbService, UsbDevice usbDevice) {
