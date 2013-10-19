@@ -41,15 +41,26 @@ public class RobotControlServiceClient {
 		}
 	};
 
+	private String host;
+	private int port;
+	private UsbService usbService;
 	private long lastNonEmptyCommand = 0;
+	private Thread clientThread;
 
-	public void startClient(final UsbService usbService) {
-		new Thread(new Runnable() {
+	public RobotControlServiceClient(UsbService usbService, String host) {
+		String[] hostParts = host.split(":", 2);
+		this.host = hostParts[0];
+		this.port = hostParts.length == 1 ? 80 : Integer.parseInt(hostParts[1]);
+		this.usbService = usbService;
+	}
+
+	public void start() {
+		Thread thread = new Thread(new Runnable() {
 			@Override
 			public void run() {
 				while (!Thread.currentThread().isInterrupted()) {
 					try {
-						Socket socket = new Socket("207.244.68.115", 8080);
+						Socket socket = new Socket(host, port);
 						PrintWriter pw = new PrintWriter(socket.getOutputStream());
 						pw.print("GET /apps/RobotApp/Commander\r\n");
 						pw.flush();
@@ -62,10 +73,13 @@ public class RobotControlServiceClient {
 						socket.getInputStream().close();
 					} catch (Exception e) {
 						Log.e("RobotControlServiceClient", e.getMessage(), e);
+						sleep(1000);
 					}
 				}
 			}
-		}).start();
+		});
+		thread.start();
+		clientThread = thread;
 	}
 
 	private void sleep(long time) {
@@ -75,6 +89,13 @@ public class RobotControlServiceClient {
 			}
 		} catch (InterruptedException e) {
 			Thread.currentThread().interrupt();
+		}
+	}
+
+	public void stop() {
+		if (clientThread != null) {
+			clientThread.interrupt();
+			clientThread = null;
 		}
 	}
 

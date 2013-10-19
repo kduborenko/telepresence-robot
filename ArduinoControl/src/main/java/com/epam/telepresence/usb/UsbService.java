@@ -20,24 +20,18 @@ public class UsbService {
 	private UsbDeviceConnection conn;
 	private UsbEndpoint output;
 
-	public UsbService(Context appContext, UsbDeviceFilter deviceFilter) {
+	public UsbService(Context appContext, UsbDevice d, DeviceInitializationListener listener) {
 		this.usbManager = (UsbManager) appContext.getSystemService(Context.USB_SERVICE);
-
-		for (UsbDevice d : usbManager.getDeviceList().values()) {
-			if (deviceFilter.acceptDevice(d)) {
-				if (!usbManager.hasPermission(d)) {
-					PendingIntent pi = PendingIntent.getBroadcast(appContext, 0, new Intent(ACTION_USB_PERMISSION), 0);
-					appContext.registerReceiver(new UsbDeviceBroadcastReceiver(), new IntentFilter(ACTION_USB_PERMISSION));
-					usbManager.requestPermission(d, pi);
-				} else {
-					initializeDevice(d);
-					break;
-				}
-			}
+		if (!usbManager.hasPermission(d)) {
+			PendingIntent pi = PendingIntent.getBroadcast(appContext, 0, new Intent(ACTION_USB_PERMISSION), 0);
+			appContext.registerReceiver(new UsbDeviceBroadcastReceiver(listener), new IntentFilter(ACTION_USB_PERMISSION));
+			usbManager.requestPermission(d, pi);
+		} else {
+			initializeDevice(d, listener);
 		}
 	}
 
-	private void initializeDevice(final UsbDevice device) {
+	private void initializeDevice(UsbDevice device, DeviceInitializationListener listener) {
 		conn = usbManager.openDevice(device);
 		UsbInterface usbInterface = device.getInterface(1);
 		if (!conn.claimInterface(usbInterface, true)) {
@@ -45,6 +39,7 @@ public class UsbService {
 		}
 
 		output = getEndpoint(usbInterface, UsbConstants.USB_DIR_OUT);
+		listener.onDeviceInitializedSuccessfully(this, device);
 	}
 
 	private UsbEndpoint getEndpoint(UsbInterface usbInterface, int direction) {
@@ -58,7 +53,7 @@ public class UsbService {
 	}
 
 	public void sendByte(byte b) {
-		send(new byte[] {b});
+		send(new byte[]{b});
 	}
 
 	public void send(byte[] bytes) {
@@ -66,6 +61,12 @@ public class UsbService {
 	}
 
 	private class UsbDeviceBroadcastReceiver extends BroadcastReceiver {
+		private final DeviceInitializationListener listener;
+
+		public UsbDeviceBroadcastReceiver(DeviceInitializationListener listener) {
+			this.listener = listener;
+		}
+
 		@Override
 		public void onReceive(Context context, Intent intent) {
 			context.unregisterReceiver(this);
@@ -79,7 +80,7 @@ public class UsbService {
 					Log.d("UsbService", "Permission denied on " + device.getDeviceId());
 				} else {
 					Log.d("UsbService", "Permission granted");
-					initializeDevice(device);
+					initializeDevice(device, listener);
 				}
 			}
 		}
