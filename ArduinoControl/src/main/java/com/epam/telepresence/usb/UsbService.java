@@ -20,7 +20,7 @@ public class UsbService {
 	private UsbDeviceConnection conn;
 	private UsbEndpoint output;
 
-	public UsbService(Context appContext, UsbDevice d, DeviceInitializationListener listener) {
+	public UsbService(Context appContext, UsbDevice d, ServiceInitializationListener listener) {
 		this.usbManager = (UsbManager) appContext.getSystemService(Context.USB_SERVICE);
 		if (!usbManager.hasPermission(d)) {
 			PendingIntent pi = PendingIntent.getBroadcast(appContext, 0, new Intent(ACTION_USB_PERMISSION), 0);
@@ -31,7 +31,7 @@ public class UsbService {
 		}
 	}
 
-	private void initializeDevice(UsbDevice device, DeviceInitializationListener listener) {
+	private void initializeDevice(UsbDevice device, ServiceInitializationListener listener) {
 		conn = usbManager.openDevice(device);
 		UsbInterface usbInterface = device.getInterface(1);
 		if (!conn.claimInterface(usbInterface, true)) {
@@ -39,7 +39,7 @@ public class UsbService {
 		}
 
 		output = getEndpoint(usbInterface, UsbConstants.USB_DIR_OUT);
-		listener.onDeviceInitializedSuccessfully(this, device);
+		listener.onServiceInitializedSuccessfully(this, device);
 	}
 
 	private UsbEndpoint getEndpoint(UsbInterface usbInterface, int direction) {
@@ -61,9 +61,9 @@ public class UsbService {
 	}
 
 	private class UsbDeviceBroadcastReceiver extends BroadcastReceiver {
-		private final DeviceInitializationListener listener;
+		private final ServiceInitializationListener listener;
 
-		public UsbDeviceBroadcastReceiver(DeviceInitializationListener listener) {
+		public UsbDeviceBroadcastReceiver(ServiceInitializationListener listener) {
 			this.listener = listener;
 		}
 

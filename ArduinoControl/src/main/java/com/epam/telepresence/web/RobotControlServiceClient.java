@@ -2,7 +2,7 @@ package com.epam.telepresence.web;
 
 import android.util.Log;
 
-import com.epam.telepresence.usb.UsbService;
+import com.epam.telepresence.Device;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
@@ -18,40 +18,40 @@ public class RobotControlServiceClient {
 	private static final byte RIGHT_CODE = 10;
 	private static final byte LEFT_CODE = 11;
 
-	private static final UsbCommand DO_NOTHING = new UsbCommand() {
+	private static final Action DO_NOTHING = new Action() {
 		@Override
-		public void run(UsbService usbService, RobotControlServiceClient client) {
+		public void run(Device device, RobotControlServiceClient client) {
 			client.sleep(100);
 		}
 	};
 
-	private static final Map<Command, UsbCommand> COMMANDS = new HashMap<Command, UsbCommand>() {
+	private static final Map<Command, Action> COMMANDS = new HashMap<Command, Action>() {
 		{
 			put(Command.EMPTY, DO_NOTHING);
-			put(Command.FORWARD, new SendByteUsbCommand(FWD_CODE));
-			put(Command.BACKWARD, new SendByteUsbCommand(BKWD_CODE));
-			put(Command.LEFT, new SendByteUsbCommand(LEFT_CODE));
-			put(Command.RIGHT, new SendByteUsbCommand(RIGHT_CODE));
+			put(Command.FORWARD, new SendByteAction(FWD_CODE));
+			put(Command.BACKWARD, new SendByteAction(BKWD_CODE));
+			put(Command.LEFT, new SendByteAction(LEFT_CODE));
+			put(Command.RIGHT, new SendByteAction(RIGHT_CODE));
 		}
 
 		@Override
-		public UsbCommand get(Object key) {
-			UsbCommand usbCommand = super.get(key);
-			return usbCommand == null ? DO_NOTHING : usbCommand;
+		public Action get(Object key) {
+			Action action = super.get(key);
+			return action == null ? DO_NOTHING : action;
 		}
 	};
 
 	private String host;
 	private int port;
-	private UsbService usbService;
+	private Device device;
 	private long lastNonEmptyCommand = 0;
 	private Thread clientThread;
 
-	public RobotControlServiceClient(UsbService usbService, String host) {
+	public RobotControlServiceClient(Device device, String host) {
 		String[] hostParts = host.split(":", 2);
 		this.host = hostParts[0];
 		this.port = hostParts.length == 1 ? 80 : Integer.parseInt(hostParts[1]);
-		this.usbService = usbService;
+		this.device = device;
 	}
 
 	public void start() {
@@ -68,7 +68,7 @@ public class RobotControlServiceClient {
 						for (String commandName; (commandName = br.readLine()) != null; ) {
 							Command command = Command.valueOf(commandName);
 							Log.i("RobotControlServiceClient", "Command: " + command.toString());
-							COMMANDS.get(command).run(usbService, RobotControlServiceClient.this);
+							COMMANDS.get(command).run(device, RobotControlServiceClient.this);
 						}
 						socket.getInputStream().close();
 					} catch (Exception e) {
@@ -99,21 +99,21 @@ public class RobotControlServiceClient {
 		}
 	}
 
-	private interface UsbCommand {
-		void run(UsbService usbService, RobotControlServiceClient client);
+	private interface Action {
+		void run(Device device, RobotControlServiceClient client);
 	}
 
-	private static class SendByteUsbCommand implements UsbCommand {
+	private static class SendByteAction implements Action {
 
 		private byte code;
 
-		private SendByteUsbCommand(byte code) {
+		private SendByteAction(byte code) {
 			this.code = code;
 		}
 
 		@Override
-		public void run(UsbService usbService, RobotControlServiceClient client) {
-			usbService.sendByte(code);
+		public void run(Device device, RobotControlServiceClient client) {
+			device.writeByte(code);
 			client.lastNonEmptyCommand = System.currentTimeMillis();
 		}
 	}

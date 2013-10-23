@@ -1,9 +1,14 @@
 package com.epam.telepresence.usb;
 
+import android.content.Context;
 import android.hardware.usb.UsbDevice;
 
-public class UsbDeviceDescriptor {
+import com.epam.telepresence.Device;
+import com.epam.telepresence.DeviceInitializationListener;
 
+public class UsbDeviceDescriptor implements Device {
+
+	private UsbService usbService;
 	private final UsbDevice usbDevice;
 	private final String vendorName;
 	private final String deviceName;
@@ -33,5 +38,23 @@ public class UsbDeviceDescriptor {
 			Integer.toHexString(getUsbDevice().getProductId()),
 			getVendorName(),
 			getDeviceName());
+	}
+
+	@Override
+	public void initialize(Context context, final DeviceInitializationListener listener) {
+		usbService = new UsbService(
+			context, usbDevice,
+			new ServiceInitializationListener() {
+				@Override
+				public void onServiceInitializedSuccessfully(UsbService usbService, UsbDevice usbDevice) {
+					listener.onSuccess(UsbDeviceDescriptor.this);
+				}
+			}
+		);
+	}
+
+	@Override
+	public void writeByte(byte b) {
+		usbService.sendByte(b);
 	}
 }

@@ -15,10 +15,8 @@ import android.widget.ArrayAdapter;
 import android.widget.EditText;
 import android.widget.Spinner;
 
-import com.epam.telepresence.usb.DeviceInitializationListener;
 import com.epam.telepresence.usb.UsbDeviceDescriptor;
 import com.epam.telepresence.usb.UsbDevicesDatabase;
-import com.epam.telepresence.usb.UsbService;
 import com.epam.telepresence.web.RobotControlServiceClient;
 
 import java.util.ArrayList;
@@ -87,22 +85,20 @@ public class MainActivity extends Activity {
 
 	public void onStartButtonPressed(final View view) {
 		Spinner deviceListSpinner = (Spinner) findViewById(R.id.deviceList);
-		new UsbService(
-			getApplicationContext(),
-			((UsbDeviceDescriptor) deviceListSpinner.getSelectedItem()).getUsbDevice(),
-			new DeviceInitializationListener() {
-				@Override
-				public void onDeviceInitializedSuccessfully(UsbService usbService, UsbDevice usbDevice) {
-					EditText hostView = (EditText) findViewById(R.id.host);
-					String host = hostView.getText().toString();
-					client = new RobotControlServiceClient(usbService, host);
-					client.start();
-					view.setEnabled(false);
-					findViewById(R.id.stopButton).setEnabled(true);
-					hostView.setEnabled(false);
-				}
+		//noinspection ConstantConditions
+		((Device) deviceListSpinner.getSelectedItem())
+			.initialize(getApplicationContext(), new DeviceInitializationListener() {
+			@Override
+			public void onSuccess(Device device) {
+				EditText hostView = (EditText) findViewById(R.id.host);
+				String host = hostView.getText().toString();
+				client = new RobotControlServiceClient(device, host);
+				client.start();
+				view.setEnabled(false);
+				findViewById(R.id.stopButton).setEnabled(true);
+				hostView.setEnabled(false);
 			}
-		);
+		});
 	}
 
 	public void onStopButtonPressed(View view) {
