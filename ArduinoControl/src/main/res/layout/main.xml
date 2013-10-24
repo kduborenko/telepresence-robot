@@ -1,56 +1,58 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-              android:layout_width="fill_parent"
-              android:layout_height="fill_parent"
-              android:orientation="vertical"
-              android:descendantFocusability="beforeDescendants"
-              android:focusableInTouchMode="true">
-
-
-    <LinearLayout
-            android:layout_width="fill_parent"
-            android:layout_height="wrap_content">
-
-        <TextView
-                android:layout_width="32pt"
-                android:layout_height="wrap_content"
-                android:text="Devices:"
-                android:id="@+id/deviceListLabel"
-                android:layout_gravity="right|center_vertical"/>
-
-        <Spinner
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
                 android:layout_width="fill_parent"
-                android:layout_height="wrap_content"
-                android:id="@+id/deviceList"
-                android:layout_gravity="center"
-                />
-    </LinearLayout>
+                android:layout_height="fill_parent"
+                android:descendantFocusability="beforeDescendants"
+                android:focusableInTouchMode="true">
 
-    <LinearLayout
+    <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Devices:"
+            android:id="@+id/deviceListLabel"
+            android:layout_gravity="right|center_vertical"
+            android:layout_alignParentTop="true"
+            android:layout_alignParentLeft="true"
+            android:layout_above="@+id/hostLabel"
+            android:gravity="center_vertical"/>
+
+    <Spinner
             android:layout_width="fill_parent"
-            android:layout_height="wrap_content">
+            android:layout_height="wrap_content"
+            android:id="@+id/deviceList"
+            android:layout_gravity="center"
+            android:layout_alignParentTop="true"
+            android:layout_toRightOf="@+id/deviceListLabel"/>
 
-        <TextView
-                android:layout_width="32pt"
-                android:layout_height="wrap_content"
-                android:text="Host:"
-                android:id="@+id/hostLabel"
-                android:layout_gravity="right|center_vertical"/>
+    <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Host:"
+            android:id="@+id/hostLabel"
+            android:layout_gravity="right|center_vertical"
+            android:layout_below="@+id/deviceList"
+            android:layout_alignParentLeft="true"
+            android:layout_alignBottom="@+id/host"
+            android:layout_alignRight="@+id/deviceListLabel"
+            android:gravity="center_vertical"/>
 
-        <EditText
-                android:layout_width="fill_parent"
-                android:layout_height="wrap_content"
-                android:id="@+id/host"
-                android:inputType="text"
-                android:hint="Host name"
-                android:text="go2show.us"
-                android:focusableInTouchMode="true"/>
-    </LinearLayout>
+    <EditText
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content"
+            android:id="@+id/host"
+            android:inputType="text"
+            android:hint="Host name"
+            android:text="go2show.us"
+            android:focusableInTouchMode="true"
+            android:layout_below="@+id/deviceList"
+            android:layout_toRightOf="@+id/hostLabel"/>
 
     <LinearLayout
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_gravity="center">
+            android:layout_gravity="center"
+            android:layout_below="@+id/host"
+            android:layout_centerHorizontal="true">
 
         <Button
                 android:layout_width="wrap_content"
@@ -70,5 +72,4 @@
                 android:enabled="false"
                 android:onClick="onStopButtonPressed"/>
     </LinearLayout>
-
-</LinearLayout>
+</RelativeLayout>

@@ -32,12 +32,24 @@ public class UsbDeviceDescriptor implements Device {
 	}
 
 	@Override
-	public String toString() {
-		return String.format("%s:%s %s, %s",
-			Integer.toHexString(getUsbDevice().getVendorId()),
-			Integer.toHexString(getUsbDevice().getProductId()),
-			getVendorName(),
-			getDeviceName());
+	public String getName() {
+		return String.format("%s, %s", getVendorName(),
+			getDeviceName() == null ? "<unknown>" : getDeviceName());
+	}
+
+	@Override
+	public String getAddress() {
+		return String.format("%s:%s",
+			toHexRepresentation(getUsbDevice().getVendorId()),
+			toHexRepresentation(getUsbDevice().getProductId()));
+	}
+
+	private String toHexRepresentation(int id) {
+		StringBuilder sb = new StringBuilder(Integer.toHexString(id));
+		while (sb.length() < 4) {
+			sb.insert(0, '0');
+		}
+		return sb.toString();
 	}
 
 	@Override

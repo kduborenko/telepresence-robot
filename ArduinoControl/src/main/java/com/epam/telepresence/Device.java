@@ -8,4 +8,7 @@ public interface Device {
 
 	void writeByte(byte b);
 
+	String getName();
+
+	String getAddress();
 }
