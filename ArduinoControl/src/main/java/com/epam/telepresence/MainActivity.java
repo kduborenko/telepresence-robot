@@ -41,8 +41,23 @@ public class MainActivity extends Activity {
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
+		setContentView(R.layout.progress);
+		new Thread(new Runnable() {
+			@Override
+			public void run() {
+				usbDevicesDatabase = new UsbDevicesDatabase(getApplicationContext());
+				MainActivity.this.runOnUiThread(new Runnable() {
+					@Override
+					public void run() {
+						onUsbDatabaseInitialized();
+					}
+				});
+			}
+		}).start();
+	}
+
+	private void onUsbDatabaseInitialized() {
 		setContentView(R.layout.main);
-		usbDevicesDatabase = new UsbDevicesDatabase(getApplicationContext());
 		Spinner deviceListSpinner = (Spinner) findViewById(R.id.deviceList);
 		deviceListSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
 			@Override
