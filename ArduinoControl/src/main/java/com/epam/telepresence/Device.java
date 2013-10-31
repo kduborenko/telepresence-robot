@@ -11,4 +11,6 @@ public interface Device {
 	String getName();
 
 	String getAddress();
+
+	void dismiss();
 }

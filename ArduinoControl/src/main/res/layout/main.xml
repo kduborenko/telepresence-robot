@@ -55,7 +55,8 @@
             android:layout_height="wrap_content"
             android:layout_gravity="center"
             android:layout_below="@+id/host"
-            android:layout_centerHorizontal="true">
+            android:layout_centerHorizontal="true"
+            android:id="@+id/linearLayout">
 
         <Button
                 android:layout_width="wrap_content"
@@ -75,4 +76,38 @@
                 android:enabled="false"
                 android:onClick="onStopButtonPressed"/>
     </LinearLayout>
+
+    <Switch
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Debug Mode"
+            android:id="@+id/debugSwitch"
+            android:layout_below="@+id/linearLayout"
+            android:layout_alignParentLeft="true"
+            android:layout_marginTop="24dp"
+            android:onClick="onDebugSwitchAction"
+            android:enabled="false"/>
+
+    <EditText
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:inputType="numberDecimal"
+            android:ems="10"
+            android:id="@+id/debugValue"
+            android:layout_below="@+id/debugSwitch"
+            android:layout_alignParentLeft="true"
+            android:layout_toLeftOf="@+id/sendByteButton"
+            android:enabled="false"/>
+
+    <Button
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Send Byte"
+            android:id="@+id/sendByteButton"
+            android:layout_alignTop="@+id/debugValue"
+            android:layout_alignParentRight="true"
+            android:layout_alignBottom="@+id/debugValue"
+            android:onClick="onSendByteButtonPressed"
+            android:enabled="false"/>
+
 </RelativeLayout>

@@ -48,4 +48,15 @@ public class BluetoothDeviceDescriptor implements Device {
 			e.printStackTrace();
 		}
 	}
+
+	@Override
+	public void dismiss() {
+		try {
+			if (socket != null) {
+				socket.close();
+			}
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
 }

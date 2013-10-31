@@ -19,6 +19,7 @@ import android.widget.ArrayAdapter;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.Spinner;
+import android.widget.Switch;
 import android.widget.TextView;
 
 import com.epam.telepresence.bluetooth.BluetoothDeviceDescriptor;
@@ -140,6 +141,7 @@ public class MainActivity extends Activity {
 					client.start();
 					view.setEnabled(false);
 					findViewById(R.id.stopButton).setEnabled(true);
+					findViewById(R.id.debugSwitch).setEnabled(true);
 					hostView.setEnabled(false);
 				}
 			});
@@ -152,7 +154,22 @@ public class MainActivity extends Activity {
 			view.setEnabled(false);
 			findViewById(R.id.host).setEnabled(true);
 			reinitializeStartButton((AdapterView<?>) findViewById(R.id.deviceList));
+			Switch debugSwitch = (Switch) findViewById(R.id.debugSwitch);
+			debugSwitch.setChecked(false);
+			debugSwitch.setEnabled(false);
+			onDebugSwitchAction(debugSwitch);
 		}
+	}
+
+	public void onDebugSwitchAction(View view) {
+		Switch debugSwitch = (Switch) view;
+		findViewById(R.id.debugValue).setEnabled(debugSwitch.isChecked());
+		findViewById(R.id.sendByteButton).setEnabled(debugSwitch.isChecked());
+	}
+
+	public void onSendByteButtonPressed(View view) {
+		String value = ((EditText) findViewById(R.id.debugValue)).getText().toString();
+		client.getDevice().writeByte((byte) Integer.parseInt(value));
 	}
 
 	private class DeviceListDropdownAdapter extends ArrayAdapter<Device> {

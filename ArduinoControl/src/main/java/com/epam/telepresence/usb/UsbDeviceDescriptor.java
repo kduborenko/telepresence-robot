@@ -44,6 +44,9 @@ public class UsbDeviceDescriptor implements Device {
 			toHexRepresentation(getUsbDevice().getProductId()));
 	}
 
+	@Override
+	public void dismiss() { }
+
 	private String toHexRepresentation(int id) {
 		StringBuilder sb = new StringBuilder(Integer.toHexString(id));
 		while (sb.length() < 4) {

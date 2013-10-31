@@ -97,6 +97,11 @@ public class RobotControlServiceClient {
 			clientThread.interrupt();
 			clientThread = null;
 		}
+		device.dismiss();
+	}
+
+	public Device getDevice() {
+		return device;
 	}
 
 	private interface Action {
