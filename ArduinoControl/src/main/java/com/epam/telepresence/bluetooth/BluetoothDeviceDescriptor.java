@@ -3,6 +3,7 @@ package com.epam.telepresence.bluetooth;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothSocket;
 import android.content.Context;
+import android.util.Log;
 
 import com.epam.telepresence.Device;
 import com.epam.telepresence.DeviceInitializationListener;
@@ -26,7 +27,7 @@ public class BluetoothDeviceDescriptor implements Device {
 			socket.connect();
 			listener.onSuccess(this);
 		} catch (IOException e) {
-			e.printStackTrace();
+			Log.e("Bluetooth", e.getMessage(), e);
 		}
 	}
 
@@ -44,8 +45,8 @@ public class BluetoothDeviceDescriptor implements Device {
 	public void writeByte(byte b) {
 		try {
 			socket.getOutputStream().write(new byte[]{b});
-		} catch (IOException e) {
-			e.printStackTrace();
+		} catch (Exception e) {
+			Log.e("Bluetooth", e.getMessage(), e);
 		}
 	}
 
@@ -56,7 +57,7 @@ public class BluetoothDeviceDescriptor implements Device {
 				socket.close();
 			}
 		} catch (IOException e) {
-			e.printStackTrace();
+			Log.e("Bluetooth", e.getMessage(), e);
 		}
 	}
 }

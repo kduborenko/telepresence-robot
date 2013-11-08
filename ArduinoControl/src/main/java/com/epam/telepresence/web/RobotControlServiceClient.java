@@ -5,11 +5,16 @@ import android.util.Log;
 import com.epam.telepresence.Device;
 
 import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
+import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public class RobotControlServiceClient {
 
@@ -18,34 +23,23 @@ public class RobotControlServiceClient {
 	private static final byte RIGHT_CODE = 10;
 	private static final byte LEFT_CODE = 11;
 
-	private static final Action DO_NOTHING = new Action() {
-		@Override
-		public void run(Device device, RobotControlServiceClient client) {
-			client.sleep(100);
-		}
-	};
-
 	private static final Map<Command, Action> COMMANDS = new HashMap<Command, Action>() {
 		{
-			put(Command.EMPTY, DO_NOTHING);
 			put(Command.FORWARD, new SendByteAction(FWD_CODE));
 			put(Command.BACKWARD, new SendByteAction(BKWD_CODE));
 			put(Command.LEFT, new SendByteAction(LEFT_CODE));
 			put(Command.RIGHT, new SendByteAction(RIGHT_CODE));
 		}
-
-		@Override
-		public Action get(Object key) {
-			Action action = super.get(key);
-			return action == null ? DO_NOTHING : action;
-		}
 	};
+
+	private ExecutorService executorService = Executors.newFixedThreadPool(1);
 
 	private String host;
 	private int port;
 	private Device device;
 	private long lastNonEmptyCommand = 0;
 	private Thread clientThread;
+	private Socket socket;
 
 	public RobotControlServiceClient(Device device, String host) {
 		String[] hostParts = host.split(":", 2);
@@ -60,21 +54,26 @@ public class RobotControlServiceClient {
 			public void run() {
 				while (!Thread.currentThread().isInterrupted()) {
 					try {
-						Socket socket = new Socket(host, port);
-						PrintWriter pw = new PrintWriter(socket.getOutputStream());
-						pw.print("GET /apps/RobotApp/Commander\r\n");
-						pw.flush();
-						BufferedReader br = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-						for (String commandName; (commandName = br.readLine()) != null; ) {
+						socket = new Socket();
+						socket.connect(new InetSocketAddress(host, port));
+						PrintWriter output = new PrintWriter(socket.getOutputStream(), true);
+						InputStream inputStream = socket.getInputStream();
+						BufferedReader br = new BufferedReader(new InputStreamReader(inputStream));
+						for (String request; (request = br.readLine()) != null; ) {
+							String[] requestParts = request.split(":", 2);
+							String requestId = requestParts[0];
+							String commandName = requestParts[1];
 							Command command = Command.valueOf(commandName);
-							Log.i("RobotControlServiceClient", "Command: " + command.toString());
-							COMMANDS.get(command).run(device, RobotControlServiceClient.this);
+							if (command == null) {
+								continue;
+							}
+							executorService.submit(new CommandRunner(command, output, requestId));
 						}
-						socket.getInputStream().close();
+						inputStream.close();
 					} catch (Exception e) {
 						Log.e("RobotControlServiceClient", e.getMessage(), e);
-						sleep(1000);
 					}
+					sleep(1000);
 				}
 			}
 		});
@@ -96,6 +95,14 @@ public class RobotControlServiceClient {
 		if (clientThread != null) {
 			clientThread.interrupt();
 			clientThread = null;
+		}
+		if (socket != null) {
+			try {
+				socket.close();
+				socket = null;
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
 		}
 		device.dismiss();
 	}
@@ -120,6 +127,25 @@ public class RobotControlServiceClient {
 		public void run(Device device, RobotControlServiceClient client) {
 			device.writeByte(code);
 			client.lastNonEmptyCommand = System.currentTimeMillis();
+		}
+	}
+
+	private class CommandRunner implements Runnable {
+		private final Command command;
+		private final PrintWriter output;
+		private final String requestId;
+
+		public CommandRunner(Command command, PrintWriter output, String requestId) {
+			this.command = command;
+			this.output = output;
+			this.requestId = requestId;
+		}
+
+		@Override
+		public void run() {
+			Log.i("RobotControlServiceClient", "Command: " + command.toString());
+			COMMANDS.get(command).run(device, RobotControlServiceClient.this);
+			output.println(requestId);
 		}
 	}
 }

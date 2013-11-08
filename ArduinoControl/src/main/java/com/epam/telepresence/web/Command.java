@@ -5,10 +5,6 @@ import java.util.HashMap;
 import java.util.Map;
 
 public enum Command {
-	EMPTY((byte) 0x0),
-	FULL((byte) 0x1),
-	READY((byte) 0x2),
-	STOP((byte) 0x3),
 	FORWARD((byte) 0x4),
 	BACKWARD((byte) 0x5),
 	LEFT((byte) 0x6),
