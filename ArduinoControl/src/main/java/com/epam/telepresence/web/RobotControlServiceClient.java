@@ -11,33 +11,16 @@ import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.InetSocketAddress;
 import java.net.Socket;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 public class RobotControlServiceClient {
-
-	private static final byte FWD_CODE = 5;
-	private static final byte BKWD_CODE = 6;
-	private static final byte RIGHT_CODE = 10;
-	private static final byte LEFT_CODE = 11;
-
-	private static final Map<Command, Action> COMMANDS = new HashMap<Command, Action>() {
-		{
-			put(Command.FORWARD, new SendByteAction(FWD_CODE));
-			put(Command.BACKWARD, new SendByteAction(BKWD_CODE));
-			put(Command.LEFT, new SendByteAction(LEFT_CODE));
-			put(Command.RIGHT, new SendByteAction(RIGHT_CODE));
-		}
-	};
 
 	private ExecutorService executorService = Executors.newFixedThreadPool(1);
 
 	private String host;
 	private int port;
 	private Device device;
-	private long lastNonEmptyCommand = 0;
 	private Thread clientThread;
 	private Socket socket;
 
@@ -62,12 +45,8 @@ public class RobotControlServiceClient {
 						for (String request; (request = br.readLine()) != null; ) {
 							String[] requestParts = request.split(":", 2);
 							String requestId = requestParts[0];
-							String commandName = requestParts[1];
-							Command command = Command.valueOf(commandName);
-							if (command == null) {
-								continue;
-							}
-							executorService.submit(new CommandRunner(command, output, requestId));
+							byte commandCode = Byte.valueOf(requestParts[1]);
+							executorService.submit(new CommandRunner(commandCode, output, requestId));
 						}
 						inputStream.close();
 					} catch (Exception e) {
@@ -83,9 +62,7 @@ public class RobotControlServiceClient {
 
 	private void sleep(long time) {
 		try {
-			if ((System.currentTimeMillis() - lastNonEmptyCommand) >= 15000) {
-				Thread.sleep(time);
-			}
+			Thread.sleep(time);
 		} catch (InterruptedException e) {
 			Thread.currentThread().interrupt();
 		}
@@ -111,40 +88,21 @@ public class RobotControlServiceClient {
 		return device;
 	}
 
-	private interface Action {
-		void run(Device device, RobotControlServiceClient client);
-	}
-
-	private static class SendByteAction implements Action {
-
-		private byte code;
-
-		private SendByteAction(byte code) {
-			this.code = code;
-		}
-
-		@Override
-		public void run(Device device, RobotControlServiceClient client) {
-			device.writeByte(code);
-			client.lastNonEmptyCommand = System.currentTimeMillis();
-		}
-	}
-
 	private class CommandRunner implements Runnable {
-		private final Command command;
+		private final byte commandCode;
 		private final PrintWriter output;
 		private final String requestId;
 
-		public CommandRunner(Command command, PrintWriter output, String requestId) {
-			this.command = command;
+		public CommandRunner(byte commandCode, PrintWriter output, String requestId) {
+			this.commandCode = commandCode;
 			this.output = output;
 			this.requestId = requestId;
 		}
 
 		@Override
 		public void run() {
-			Log.i("RobotControlServiceClient", "Command: " + command.toString());
-			COMMANDS.get(command).run(device, RobotControlServiceClient.this);
+			Log.i("RobotControlServiceClient", "Command: " + commandCode);
+			device.writeByte(commandCode);
 			output.println(requestId);
 		}
 	}
